@@ -1,0 +1,11 @@
+type: entities
+title: Bundestag
+state_color: false
+entities:
+  - entity: sensor.trend_bundestag_cdu_csu
+  - entity: sensor.trend_bundestag_spd
+  - entity: sensor.trend_bundestag_grune
+  - entity: sensor.trend_bundestag_fdp
+  - entity: sensor.trend_bundestag_afd
+  - entity: sensor.trend_bundestag_linke
+  - entity: sensor.trend_bundestag_bsw
