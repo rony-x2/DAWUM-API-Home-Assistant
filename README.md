@@ -9,6 +9,21 @@ Reines YAML-Package, ohne Custom Component, ohne HACS. Eine Datei
 ablegen, neu starten, fertig.
 
 
+## Vorschau
+
+![Trend-Übersicht zum Bundestag](docs/screenshot-bundestag-trend.png)
+
+*Trend-Werte für den Bundestag als einfache Entity-Karte – jeder
+Eintrag ist ein eigener Sensor mit eigenem Verlauf in den Long-Term
+Statistics.*
+
+![Eigene Auswahl aus mehreren Parlamenten](docs/screenshot-eigene-auswahl.png)
+
+*Sensoren aus verschiedenen Parlamenten lassen sich beliebig
+kombinieren – hier eine kleine Mischung aus Baden-Württemberg,
+Berlin und Hessen.*
+
+
 ## Was du bekommst
 
 238 Sensor-Entitäten aus einem einzigen REST-Aufruf pro Stunde:
