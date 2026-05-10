@@ -79,6 +79,103 @@ Pro manueller Karte immer **einen** Block einfügen
 (*Karte hinzufügen → Manuell* im UI-Editor).
 
 
+## Anwendungsbeispiele
+
+Die Sensoren sind ganz normale numerische Sensoren – damit lassen sich
+beliebige Home-Assistant-Automationen darauf aufbauen. Ein paar Ideen
+zur Inspiration:
+
+### Schwellenwert-Benachrichtigung
+
+Push aufs Handy, sobald eine Partei bundesweit über einen bestimmten
+Wert klettert:
+
+```yaml
+automation:
+  - alias: "Umfragewert über 30 Prozent"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.umfrage_bundestag_afd
+        above: 30
+    action:
+      - service: notify.mobile_app_dein_geraet
+        data:
+          title: "Neue Umfrage"
+          message: >
+            AfD im Bund jetzt bei
+            {{ states('sensor.umfrage_bundestag_afd') }} %.
+```
+
+### Morgenbriefing per Sprachausgabe
+
+Bei der Morgenroutine die aktuellen Werte auf einem Smart Speaker
+vorlesen lassen:
+
+```yaml
+- service: tts.cloud_say   # oder eine andere TTS-Engine
+  data:
+    entity_id: media_player.kuechen_lautsprecher
+    message: >
+      Sonntagsfrage Bundestag im 14-Tage-Trend: Union bei
+      {{ states('sensor.trend_bundestag_cdu_csu') }} Prozent,
+      AfD bei {{ states('sensor.trend_bundestag_afd') }} Prozent,
+      SPD bei {{ states('sensor.trend_bundestag_spd') }} Prozent.
+```
+
+### Sprung-Alarm bei großen Veränderungen
+
+Sofort-Benachrichtigung, wenn sich ein Wert gegenüber der vorherigen
+Umfrage um mehr als zwei Prozentpunkte verschiebt:
+
+```yaml
+trigger:
+  - platform: state
+    entity_id: sensor.umfrage_bundestag_spd
+condition:
+  - condition: template
+    value_template: >
+      {{ (states('sensor.umfrage_bundestag_spd') | float(0)
+          - trigger.from_state.state | float(0)) | abs > 2 }}
+```
+
+### Ambient-Anzeige in Parteifarben
+
+Eine smarte Lampe (Hue, Lifx, ESPHome-LED-Strip) leuchtet in der
+Markenfarbe der jeweils führenden Partei – z.B. schwarz für die Union,
+rot für SPD, grün für Grüne, blau für AfD. Hübsches Statusobjekt für
+den Flur oder den Schreibtisch.
+
+### Smartphone-Widget per Companion App
+
+Die [Home Assistant Companion App](https://companion.home-assistant.io)
+bringt Homescreen-Widgets mit, die einen einzelnen Sensorwert direkt
+anzeigen – ideal für den eigenen Lieblings-Trend, ohne erst die App
+öffnen zu müssen. Auf Wear OS und der Apple Watch funktioniert das
+analog als Tile beziehungsweise Komplikation.
+
+### E-Ink-Statusdisplay
+
+Ein ESPHome-betriebenes E-Ink-Modul (MagTag, M5Paper, Inkplate) lässt
+sich als dauerhaftes Wahltrend-Display an die Wand hängen. Werte
+werden über die Home-Assistant-API abgefragt, ein Update einmal pro
+Tag genügt – die E-Ink-Anzeige bleibt auch ohne Strom erhalten.
+
+### Telegram- oder Discord-Bot
+
+Per Slash-Kommando oder zeitgesteuert schickt Home Assistant einen
+formatierten Schnappschuss aller Bundestagswerte in eine
+Telegram-Gruppe oder einen Discord-Channel. Macht sich gut als
+wöchentliches Update für Polit-interessierte Freunde.
+
+### Wahltag-Modus
+
+Am Tag einer Bundestags- oder Landtagswahl schaltet der Fernseher
+automatisch auf den Tagesschau-Stream, das Smart-Home-Briefing
+erinnert an den Wahllokal-Schluss, und das Lovelace-Dashboard
+wechselt für 24 Stunden in eine spezielle Wahlabend-Ansicht mit
+Live-Umfragen und Hochrechnungen.
+
+
 ## Sensor-Schema im Detail
 
 ### Parlament-Slugs
