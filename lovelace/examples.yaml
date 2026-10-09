@@ -1,0 +1,225 @@
+# =============================================================================
+# Lovelace-Beispiele für die DAWUM-Sensoren
+# =============================================================================
+# Jeweils EINEN Block zwischen den Trennlinien (---) kopieren und im Dashboard
+# über "Karte hinzufügen → Manuell" einfügen (ohne die Kommentarzeilen).
+#
+# Datenquelle: DAWUM (https://dawum.de), Lizenz ODbL – bei Screenshots
+# oder Veröffentlichungen bitte DAWUM als Quelle nennen.
+# =============================================================================
+
+
+---
+# -----------------------------------------------------------------------------
+# 1) Einfache Liste aller Parteien zum Bundestag (ohne HACS)
+# -----------------------------------------------------------------------------
+type: entities
+title: Bundestag (14-Tage-Trend)
+state_color: false
+entities:
+  - entity: sensor.trend_bundestag_cdu_csu
+    name: CDU/CSU
+  - entity: sensor.trend_bundestag_spd
+    name: SPD
+  - entity: sensor.trend_bundestag_grune
+    name: Grüne
+  - entity: sensor.trend_bundestag_fdp
+    name: FDP
+  - entity: sensor.trend_bundestag_afd
+    name: AfD
+  - entity: sensor.trend_bundestag_linke
+    name: Linke
+  - entity: sensor.trend_bundestag_bsw
+    name: BSW
+
+
+---
+# -----------------------------------------------------------------------------
+# 2) Balkendiagramm mit bar-card (HACS: custom-cards/bar-card)
+# -----------------------------------------------------------------------------
+type: custom:bar-card
+title: Bundestag (14-Tage-Trend)
+min: 0
+max: 40
+height: 28
+positions:
+  icon: "off"
+  indicator: "off"
+  name: outside
+entities:
+  - entity: sensor.trend_bundestag_cdu_csu
+    name: CDU/CSU
+    color: "#555555"  # Union-Schwarz, aufgehellt für dunkle Themes
+  - entity: sensor.trend_bundestag_spd
+    name: SPD
+    color: "#E3000F"
+  - entity: sensor.trend_bundestag_grune
+    name: Grüne
+    color: "#1AA037"
+  - entity: sensor.trend_bundestag_fdp
+    name: FDP
+    color: "#FFEF00"
+  - entity: sensor.trend_bundestag_afd
+    name: AfD
+    color: "#0489DB"
+  - entity: sensor.trend_bundestag_linke
+    name: Linke
+    color: "#BE3075"
+  - entity: sensor.trend_bundestag_bsw
+    name: BSW
+    color: "#792351"
+
+
+---
+# -----------------------------------------------------------------------------
+# 3) Donut-Diagramm mit apexcharts-card (HACS: RomRider/apexcharts-card)
+# -----------------------------------------------------------------------------
+type: custom:apexcharts-card
+chart_type: donut
+header:
+  show: true
+  title: Bundestag (14-Tage-Trend)
+  show_states: false
+series:
+  - entity: sensor.trend_bundestag_cdu_csu
+    name: CDU/CSU
+    color: "#555555"  # Union-Schwarz, aufgehellt für dunkle Themes
+  - entity: sensor.trend_bundestag_spd
+    name: SPD
+    color: "#E3000F"
+  - entity: sensor.trend_bundestag_grune
+    name: Grüne
+    color: "#1AA037"
+  - entity: sensor.trend_bundestag_fdp
+    name: FDP
+    color: "#FFEF00"
+  - entity: sensor.trend_bundestag_afd
+    name: AfD
+    color: "#0489DB"
+  - entity: sensor.trend_bundestag_linke
+    name: Linke
+    color: "#BE3075"
+  - entity: sensor.trend_bundestag_bsw
+    name: BSW
+    color: "#792351"
+
+
+---
+# -----------------------------------------------------------------------------
+# 4) Gauge mit Verlaufsgraph für eine einzelne Partei (ohne HACS)
+# -----------------------------------------------------------------------------
+type: vertical-stack
+cards:
+  - type: gauge
+    entity: sensor.trend_bundestag_spd
+    name: SPD Bundestag (Trend)
+    min: 0
+    max: 50
+    needle: true
+  - type: statistics-graph
+    title: Verlauf
+    entities:
+      - entity: sensor.trend_bundestag_spd
+        name: Trend
+      - entity: sensor.umfrage_bundestag_spd
+        name: Einzelumfrage
+    stat_types:
+      - mean
+    period: day
+    days_to_show: 90
+    chart_type: line
+
+
+---
+# -----------------------------------------------------------------------------
+# 5) Vergleich derselben Partei über mehrere Bundesländer (ohne HACS)
+# -----------------------------------------------------------------------------
+type: history-graph
+title: Grüne im Ländervergleich (Trend)
+hours_to_show: 720
+entities:
+  - entity: sensor.trend_baden_wurttemberg_grune
+    name: Baden-Württemberg
+  - entity: sensor.trend_berlin_grune
+    name: Berlin
+  - entity: sensor.trend_hamburg_grune
+    name: Hamburg
+  - entity: sensor.trend_nordrhein_westfalen_grune
+    name: Nordrhein-Westfalen
+
+
+---
+# -----------------------------------------------------------------------------
+# 6) Glance-Karte für eine Bundeslandübersicht (ohne HACS)
+# -----------------------------------------------------------------------------
+type: glance
+title: Nordrhein-Westfalen (letzte Umfrage)
+columns: 4
+show_icon: false
+entities:
+  - entity: sensor.umfrage_nordrhein_westfalen_cdu_csu
+    name: CDU
+  - entity: sensor.umfrage_nordrhein_westfalen_spd
+    name: SPD
+  - entity: sensor.umfrage_nordrhein_westfalen_grune
+    name: Grüne
+  - entity: sensor.umfrage_nordrhein_westfalen_fdp
+    name: FDP
+  - entity: sensor.umfrage_nordrhein_westfalen_afd
+    name: AfD
+  - entity: sensor.umfrage_nordrhein_westfalen_linke
+    name: Linke
+  - entity: sensor.umfrage_nordrhein_westfalen_bsw
+    name: BSW
+
+
+---
+# -----------------------------------------------------------------------------
+# 7) vertical-stack mit allem zusammen auf einer Seite (ohne HACS)
+# -----------------------------------------------------------------------------
+type: vertical-stack
+cards:
+  - type: markdown
+    content: >-
+      **Sonntagsfrage Bundestag** – 14-Tage-Mittelwert aller Institute.
+      Quelle: [DAWUM](https://dawum.de) (ODbL)
+  - type: glance
+    columns: 4
+    show_icon: false
+    entities:
+      - entity: sensor.trend_bundestag_cdu_csu
+        name: CDU/CSU
+      - entity: sensor.trend_bundestag_spd
+        name: SPD
+      - entity: sensor.trend_bundestag_grune
+        name: Grüne
+      - entity: sensor.trend_bundestag_fdp
+        name: FDP
+      - entity: sensor.trend_bundestag_afd
+        name: AfD
+      - entity: sensor.trend_bundestag_linke
+        name: Linke
+      - entity: sensor.trend_bundestag_bsw
+        name: BSW
+  - type: statistics-graph
+    title: Verlauf der letzten 90 Tage
+    entities:
+      - entity: sensor.trend_bundestag_cdu_csu
+        name: CDU/CSU
+      - entity: sensor.trend_bundestag_spd
+        name: SPD
+      - entity: sensor.trend_bundestag_grune
+        name: Grüne
+      - entity: sensor.trend_bundestag_fdp
+        name: FDP
+      - entity: sensor.trend_bundestag_afd
+        name: AfD
+      - entity: sensor.trend_bundestag_linke
+        name: Linke
+      - entity: sensor.trend_bundestag_bsw
+        name: BSW
+    stat_types:
+      - mean
+    period: day
+    days_to_show: 90
+    chart_type: line

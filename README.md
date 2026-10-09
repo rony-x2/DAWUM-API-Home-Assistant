@@ -48,7 +48,7 @@ und Statistik-Karten funktionieren ohne Zusatzkonfiguration.
 
 ## Voraussetzungen
 
-- Home Assistant 2022.4 oder neuer (für trigger-basierte Template-Sensoren).
+- Home Assistant 2023.9 oder neuer (für `availability`-Templates bei REST-Sensoren).
 - Aktivierte Packages-Konfiguration in `configuration.yaml` (siehe Installation).
 - Internetzugang vom Home-Assistant-Host zur DAWUM-API.
 
@@ -79,8 +79,8 @@ und Statistik-Karten funktionieren ohne Zusatzkonfiguration.
 
 ## Lovelace-Karten
 
-Im Ordner `lovelace/examples.yaml` liegen mehrere fertige Karten zum
-Kopieren – jeweils zwischen den Kommentar-Trennlinien:
+In der Datei `lovelace/examples.yaml` liegen mehrere fertige Karten zum
+Kopieren – jeweils zwischen den Trennlinien (`---`):
 
 - Einfache Liste aller Parteien zum Bundestag (ohne HACS)
 - Balkendiagramm mit `bar-card` (HACS)
@@ -100,6 +100,9 @@ Die Sensoren sind ganz normale numerische Sensoren – damit lassen sich
 beliebige Home-Assistant-Automationen darauf aufbauen. Ein paar Ideen
 zur Inspiration:
 
+(Die YAML-Beispiele nutzen die Schreibweise `triggers:`/`actions:` ab
+Home Assistant 2024.10.)
+
 ### Schwellenwert-Benachrichtigung
 
 Push aufs Handy, sobald eine Partei bundesweit über einen bestimmten
@@ -108,12 +111,12 @@ Wert klettert:
 ```yaml
 automation:
   - alias: "Umfragewert über 30 Prozent"
-    trigger:
-      - platform: numeric_state
+    triggers:
+      - trigger: numeric_state
         entity_id: sensor.umfrage_bundestag_afd
         above: 30
-    action:
-      - service: notify.mobile_app_dein_geraet
+    actions:
+      - action: notify.mobile_app_dein_geraet
         data:
           title: "Neue Umfrage"
           message: >
@@ -127,9 +130,11 @@ Bei der Morgenroutine die aktuellen Werte auf einem Smart Speaker
 vorlesen lassen:
 
 ```yaml
-- service: tts.cloud_say   # oder eine andere TTS-Engine
+- action: tts.speak
+  target:
+    entity_id: tts.home_assistant_cloud   # oder eine andere TTS-Engine
   data:
-    entity_id: media_player.kuechen_lautsprecher
+    media_player_entity_id: media_player.kuechen_lautsprecher
     message: >
       Sonntagsfrage Bundestag im 14-Tage-Trend: Union bei
       {{ states('sensor.trend_bundestag_cdu_csu') }} Prozent,
@@ -143,14 +148,17 @@ Sofort-Benachrichtigung, wenn sich ein Wert gegenüber der vorherigen
 Umfrage um mehr als zwei Prozentpunkte verschiebt:
 
 ```yaml
-trigger:
-  - platform: state
+triggers:
+  - trigger: state
     entity_id: sensor.umfrage_bundestag_spd
-condition:
+conditions:
+  # nur echte Wertänderungen, nicht den Wechsel von/zu "nicht verfügbar"
   - condition: template
     value_template: >
-      {{ (states('sensor.umfrage_bundestag_spd') | float(0)
-          - trigger.from_state.state | float(0)) | abs > 2 }}
+      {{ trigger.from_state.state | is_number
+         and trigger.to_state.state | is_number
+         and (trigger.to_state.state | float
+              - trigger.from_state.state | float) | abs > 2 }}
 ```
 
 ### Ambient-Anzeige in Parteifarben
@@ -237,11 +245,12 @@ gemappt; im Bundestag auf CDU/CSU; in den übrigen Bundesländern auf CDU.
 ### Verhalten bei fehlenden Daten
 
 Sensoren von Parteien, die in der jeweiligen Umfrage nicht abgefragt
-wurden (z.B. BSW in einigen Stadtstaaten), bleiben `unknown`.
+wurden (z.B. BSW in einigen Stadtstaaten), sind `unavailable`
+(„nicht verfügbar“).
 Das ist gewollt und zeigt direkt an, wo Daten dünn sind.
 
 Trend-Sensoren ohne Umfragen in den letzten 14 Tagen sind ebenfalls
-`unknown` – betrifft vor allem kleinere Bundesländer wie Bremen oder
+`unavailable` – betrifft vor allem kleinere Bundesländer wie Bremen oder
 das Saarland, die selten umfragt werden.
 
 
@@ -252,7 +261,9 @@ Ein einzelner REST-Aufruf pro Stunde lädt
 mit jeweils der neuesten Umfrage pro Institut und Parlament.
 
 Jeder Sensor rendert seinen Wert direkt aus dem JSON-Response über
-ein `value_template`. Die JSON-Daten werden nicht als Sensor-Attribute
+ein `value_template`; ein gleichartiges `availability`-Template schaltet
+den Sensor auf „nicht verfügbar“, wenn es keinen Wert gibt. So entstehen
+keine Fehlermeldungen wegen nicht-numerischer Zustände. Die JSON-Daten werden nicht als Sensor-Attribute
 persistiert; damit umgeht die Lösung das ~16-KB-Limit für
 Sensor-Attribute in Home Assistant, das bei naiven Implementierungen
 mit `json_attributes` zuschlägt.
@@ -266,24 +277,29 @@ typischerweise um wenige Zehntelprozentpunkte.
 
 ## Anpassen
 
+Die Datei `packages/dawum_umfragen.yaml` wird von
+`tools/generate_package.py` erzeugt. Größere Anpassungen am besten dort
+vornehmen und das Skript neu ausführen (`python3 tools/generate_package.py`,
+nur Python 3 nötig) – Namen und `unique_id`s bleiben dabei stabil.
+
 ### Trend-Zeitraum ändern
 
-In den Trend-Templates `days=14` durch einen anderen Wert ersetzen:
+Im Generator `TREND_DAYS = 14` anpassen und neu erzeugen. Alternativ in
+der fertigen YAML-Datei in allen Trend-Templates `days=14` ersetzen:
 
 ```yaml
-{% set cutoff = (now() - timedelta(days=21)).strftime("%Y-%m-%d") %}
+{% set cutoff = (now() - timedelta(days=21)).strftime('%Y-%m-%d') %}
 ```
 
 ### Aktualisierungsintervall
 
 `scan_interval: 3600` im `rest:`-Block anpassen (Wert in Sekunden).
-Eine stündliche Abfrage ist ausreichend – DAWUM aktualisiert
-typischerweise nur wenige Male pro Woche.
+Eine stündliche Abfrage ist ausreichend.
 
 ### Weitere Parteien aufnehmen
 
-Im YAML einen neuen Sensor-Block ergänzen und im `value_template`
-beim Shortcut-Match die gewünschte Partei eintragen. Mögliche Werte
+Im Generator die Liste `PARTIES` um eine Zeile ergänzen (Anzeigename,
+Teil der `unique_id`, Icon, DAWUM-Kürzel) und neu erzeugen. Mögliche Kürzel
 sind unter anderem `Freie Wähler`, `SSW`, `BVB/FW`, `Tierschutzpartei`
 und `Sonstige`.
 
